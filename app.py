@@ -1,23 +1,16 @@
-import os
 import cv2
 import numpy as np
 from flask import Flask, request, jsonify
-from werkzeug.utils import secure_filename
-from PIL import Image
-import io
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
+app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  # 15MB max-limit
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-# Create uploads directory if it doesn't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+DEFAULT_BLUR_THRESHOLD = 30
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def is_blurry(image, threshold=50):
+def is_blurry(image, threshold=DEFAULT_BLUR_THRESHOLD):
     """Check if image is blurry using the Laplacian variance method"""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
@@ -83,7 +76,7 @@ def validate_face():
             return jsonify({
                 'valid': False,
                 'reason': f'Expected 1 face, found {face_count}'
-            }), 200
+            }), 400
         
         # 2. Check if image is blurry
         is_blur, blur_value = is_blurry(img)
@@ -91,14 +84,14 @@ def validate_face():
             return jsonify({
                 'valid': False,
                 'reason': f'Image is too blurry (score: {blur_value:.2f})'
-            }), 200
+            }), 400
         
         # 3. Check if face is cartoon or fake
         if is_cartoon_or_fake(img):
             return jsonify({
                 'valid': False,
                 'reason': 'Image appears to be a cartoon or fake face'
-            }), 200
+            }), 400
         
         # If all checks pass, the image is valid
         return jsonify({
