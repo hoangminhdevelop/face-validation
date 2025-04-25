@@ -52,3 +52,6 @@ htmlcov/
 
 # Local configuration
 .python-version
+
+# uploads
+uploads/
